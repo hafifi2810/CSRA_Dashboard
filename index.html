@@ -406,28 +406,27 @@
             }
             
             // Format dates
-            const formattedStartDate = startDate.toLocaleDateString();
-            const formattedEndDate = endDate.toLocaleDateString();
-            
-            // Get latest log summary if exists
             let latestLogSummary = '';
-            if (item.logs && item.logs.length > 0) {
-                const latestLog = item.logs[item.logs.length - 1];
-                const description = latestLog.Description || ''; // Safe fallback
+
+            if (item.logs && Array.isArray(item.logs) && item.logs.length > 0) {
+                const latestLog = item.logs[item.logs.length - 1] || {};
+                const description = typeof latestLog.Description === 'string' ? latestLog.Description : '';
+                const status = latestLog.Status || 'Unknown';
 
                 let statusClass = '';
-                if (latestLog.Status === 'Closed') {
+                if (status === 'Closed') {
                     statusClass = 'bg-green-100 text-green-800';
-                } else if (latestLog.Status === 'In Progress') {
+                } else if (status === 'In Progress') {
                     statusClass = 'bg-yellow-100 text-yellow-800';
                 } else {
                     statusClass = 'bg-gray-100 text-gray-800';
                 }
 
                 latestLogSummary = `<div class="text-sm text-gray-600 mt-2">
-                    <span class="font-medium">Latest (${latestLog.Status}):</span> ${description.substring(0, 60)}${description.length > 60 ? '...' : ''}
+                    <span class="font-medium">Latest (${status}):</span> ${description.substring(0, 60)}${description.length > 60 ? '...' : ''}
                 </div>`;
             }
+
             // Create the item element
             const itemElement = document.createElement('div');
             itemElement.className = 'bg-white rounded-lg shadow overflow-hidden fade-in';
