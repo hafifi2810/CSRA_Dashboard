@@ -79,16 +79,20 @@
                         </select>
                     </div>
                     <div class="relative">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Filter Items</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Filter Title</label>
                         <div class="relative">
                             <button id="multiSelectToggle" class="border border-gray-300 rounded-md px-3 py-2 text-left w-48 focus:outline-none focus:ring-2 focus:ring-blue-500 flex justify-between items-center">
-                                <span>Select Items</span>
+                                <span>Select Titles</span>
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                             <div id="multiSelectDropdown" class="absolute z-10 mt-1 w-48 bg-white shadow-lg rounded-md py-1 hidden border border-gray-200 max-h-60 overflow-y-auto">
                                 <!-- Items will be populated by JavaScript -->
                             </div>
                         </div>
+                        <button id="applyFilterBtn" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                            Apply Filter
+                        </button>
+                        <div id="selectedItemsDisplay" class="mt-2 text-sm text-gray-600"></div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -434,6 +438,7 @@
             itemElement.className = 'bg-white rounded-lg shadow overflow-hidden fade-in';
             itemElement.dataset.id = item.id;
             itemElement.dataset.status = item.status;
+            itemElement.dataset.title = item.Title;
             
             itemElement.innerHTML = `
                 <div class="p-4">
@@ -508,10 +513,12 @@
             
             // Add logs to the table
             const logsTableBody = itemElement.querySelector('.logs-table-body');
-            item.logs.forEach(log => {
-                const logRow = createLogRowElement(item.id, log);
-                logsTableBody.appendChild(logRow);
-            });
+            if (item.logs && Array.isArray(item.logs)) {
+                item.logs.forEach(log => {
+                    const logRow = createLogRowElement(item.id, log);
+                    logsTableBody.appendChild(logRow);
+                });
+            }
             
             return itemElement;
         }
@@ -570,22 +577,43 @@
 
             // ✅ Filter logic (if needed)
             let filteredItems = [...csraItems];
+            
+            // Apply status filter
             if (typeof statusFilter !== 'undefined' && statusFilter.value !== 'all') {
                 filteredItems = filteredItems.filter(item => item.Status === statusFilter.value);
             }
+            
+            // Apply title filter
+            if (selectedFilterTitles.length > 0) {
+                filteredItems = filteredItems.filter(item => 
+                    selectedFilterTitles.includes(item.Title)
+                );
+            }
 
             // ✅ Sort logic
-            if (typeof sortOrder !== 'undefined' && sortOrder.value === 'asc') {
-                filteredItems.sort((a, b) => (a.Title || '').localeCompare(b.Title || ''));
-            } else {
-                filteredItems.sort((a, b) => (b.Title || '').localeCompare(a.Title || ''));
+            if (typeof sortFilter !== 'undefined') {
+                switch (sortFilter.value) {
+                    case 'startDate':
+                        filteredItems.sort((a, b) => new Date(a["Start Date"]) - new Date(b["Start Date"]));
+                        break;
+                    case 'endDate':
+                        filteredItems.sort((a, b) => new Date(a["Due Date"]) - new Date(b["Due Date"]));
+                        break;
+                    case 'title':
+                        filteredItems.sort((a, b) => (a.Title || '').localeCompare(b.Title || ''));
+                        break;
+                    default:
+                        // Default order - no sorting
+                        break;
+                }
             }
 
             // ✅ Render items if they have a Title
             filteredItems
                 .filter(item => item && item.Title)
                 .forEach(item => {
-                    createCSRAItemElement(item); // ← this should already exist
+                    const itemElement = createCSRAItemElement(item);
+                    csraItemsContainer.appendChild(itemElement);
                 });
         }
 
@@ -614,6 +642,9 @@
             document.getElementById('overallProgressCircle').setAttribute('stroke-dasharray', `${avgProgress}, 100`);
         }
 
+        // Store selected filter titles
+        let selectedFilterTitles = [];
+
         // Populate multi-select dropdown
         function populateMultiSelect() {
             const dropdown = document.getElementById('multiSelectDropdown');
@@ -623,15 +654,38 @@
                 const itemId = `item-${index}`;
                 const title = item.Title || 'Untitled';
 
-            const itemElement = document.createElement('div');
-            itemElement.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center';
-            itemElement.innerHTML = `
-                <input type="checkbox" id="${itemId}" class="mr-2" value="${title}">
-                <label for="${itemId}" class="cursor-pointer">${title}</label>
-            `;
-            dropdown.appendChild(itemElement);
-        });
-    }
+                const itemElement = document.createElement('div');
+                itemElement.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center';
+                itemElement.innerHTML = `
+                    <input type="checkbox" id="${itemId}" class="mr-2" value="${title}">
+                    <label for="${itemId}" class="cursor-pointer">${title}</label>
+                `;
+                dropdown.appendChild(itemElement);
+            });
+        }
+
+        // Update selected items display
+        function updateSelectedItemsDisplay() {
+            const displayElement = document.getElementById('selectedItemsDisplay');
+            if (selectedFilterTitles.length === 0) {
+                displayElement.textContent = 'No titles selected';
+            } else {
+                displayElement.textContent = `Selected: ${selectedFilterTitles.join(', ')}`;
+            }
+        }
+
+        // Apply filter based on selected titles
+        function applyTitleFilter() {
+            // Get all checked checkboxes
+            const checkboxes = document.querySelectorAll('#multiSelectDropdown input[type="checkbox"]:checked');
+            selectedFilterTitles = Array.from(checkboxes).map(cb => cb.value);
+            
+            // Update display
+            updateSelectedItemsDisplay();
+            
+            // Re-render items with filter applied
+            renderCSRAItems();
+        }
 
         // Fetch data from Google Sheets
         function fetchCSRAData() {
@@ -645,6 +699,7 @@
                     updateStats();
                     updateOverallProgress();
                     populateMultiSelect();
+                    updateSelectedItemsDisplay();
                 })
                 .catch(error => {
                     console.error('Error fetching data:', error);
@@ -657,6 +712,9 @@
         document.getElementById('multiSelectToggle').addEventListener('click', () => {
             document.getElementById('multiSelectDropdown').classList.toggle('hidden');
         });
+
+        // Apply filter button event
+        document.getElementById('applyFilterBtn').addEventListener('click', applyTitleFilter);
 
         // Event Listeners
         statusFilter.addEventListener('change', renderCSRAItems);
