@@ -500,19 +500,19 @@
             
             // Get latest log summary if exists
             let latestLogSummary = '';
-            if (item.logs.length > 0) {
+            if (Array.isArray(item.logs) && item.logs.length > 0) {
                 const latestLog = item.logs[item.logs.length - 1];
                 let statusClass = '';
                 if (latestLog.status === 'Closed') {
                     statusClass = 'bg-green-100 text-green-800';
-                } else if (latestLog.status === 'In Progress') {
-                    statusClass = 'bg-yellow-100 text-yellow-800';
-                } else {
-                    statusClass = 'bg-gray-100 text-gray-800';
-                }
-                latestLogSummary = `<div class="text-sm text-gray-600 mt-2">
-                    <span class="font-medium">Latest (${latestLog.status}):</span> ${latestLog.description.substring(0, 60)}${latestLog.description.length > 60 ? '...' : ''}
-                </div>`;
+            } else if (latestLog.status === 'In Progress') {
+                statusClass = 'bg-yellow-100 text-yellow-800';
+            } else {
+                statusClass = 'bg-gray-100 text-gray-800';
+            }
+            latestLogSummary = `<div class="text-sm text-gray-600 mt-2">
+                <span class="font-medium">Latest (${latestLog.status}):</span> ${latestLog.description.substring(0, 60)}${latestLog.description.length > 60 ? '...' : ''}
+            </div>`;
             }
             
             // Create the item element
