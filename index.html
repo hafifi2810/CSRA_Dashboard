@@ -366,8 +366,8 @@
             fetch("https://script.google.com/macros/s/AKfycbz7WA3H1QPi0t26iu5p7YiQ3H32ytdGqvk836QHWjc7OmTz9XCxc-27ptsi3O1uYkNg/exec")
                 .then(res => res.json())
                 .then(data => {
-                    csraItems = data.csra;
-                    csraLogs = data.logs;
+                    csraItems = data.csra || [];
+                    csraLogs = data.logs || [];
                     renderCSRAItems();
                     updateStats();
                     updateOverallProgress();
@@ -460,20 +460,19 @@
                 filteredItems = filteredItems.filter(item => item.status === statusFilter.value);
             }
             
-            // Sort items
-            if (sortFilter.value === 'startDate') {
-                filteredItems.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-            } else if (sortFilter.value === 'endDate') {
-                filteredItems.sort((a, b) => new Date(a.endDate) - new Date(b.endDate));
-            } else if (sortFilter.value === 'title') {
-                filteredItems.sort((a, b) => a.title.localeCompare(b.title));
+            // ✅ Sort items (by title, can update to sort by date or other)
+            if (sortOrder.value === 'asc') {
+                filteredItems.sort((a, b) => (a.Title || '').localeCompare(b.Title || ''));
+            } else {
+                filteredItems.sort((a, b) => (b.Title || '').localeCompare(a.Title || ''));
             }
             
-            // Render each item
-            filteredItems.forEach(item => {
-                const itemElement = createCSRAItemElement(item);
-                csraItemsContainer.appendChild(itemElement);
-            });
+            // ✅ Only render valid items with a Title
+            filteredItems
+                .filter(item => item && item.Title)
+                .forEach(item => {
+                    createCSRAItemElement(item); // <- Pass structured object
+                });
         }
 
         // Create HTML element for a CSRA item
