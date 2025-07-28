@@ -411,21 +411,23 @@
             
             // Get latest log summary if exists
             let latestLogSummary = '';
-            if (Array.isArray(item.logs) && item.logs.length > 0) {
+            if (item.logs && item.logs.length > 0) {
                 const latestLog = item.logs[item.logs.length - 1];
+                const description = latestLog.Description || ''; // Safe fallback
+
                 let statusClass = '';
-                if (latestLog.status === 'Closed') {
+                if (latestLog.Status === 'Closed') {
                     statusClass = 'bg-green-100 text-green-800';
-                } else if (latestLog.status === 'In Progress') {
+                } else if (latestLog.Status === 'In Progress') {
                     statusClass = 'bg-yellow-100 text-yellow-800';
                 } else {
                     statusClass = 'bg-gray-100 text-gray-800';
                 }
+
                 latestLogSummary = `<div class="text-sm text-gray-600 mt-2">
-                    <span class="font-medium">Latest (${latestLog.status}):</span> ${latestLog.description.substring(0, 60)}${latestLog.description.length > 60 ? '...' : ''}
+                    <span class="font-medium">Latest (${latestLog.Status}):</span> ${description.substring(0, 60)}${description.length > 60 ? '...' : ''}
                 </div>`;
             }
-            
             // Create the item element
             const itemElement = document.createElement('div');
             itemElement.className = 'bg-white rounded-lg shadow overflow-hidden fade-in';
