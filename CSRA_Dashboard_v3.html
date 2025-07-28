@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSRA Activity Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .progress-bar {
+            height: 20px;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .rotate-90 {
+            transform: rotate(90deg);
+            transition: transform 0.2s ease;
+        }
+        
+        .rotate-0 {
+            transform: rotate(0deg);
+            transition: transform 0.2s ease;
+        }
+        
+        .highlight-new {
+            animation: highlight 2s ease-out;
+        }
+        
+        @keyframes highlight {
+            0% { background-color: rgba(255, 255, 0, 0.3); }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">CSRA Activity Dashboard</h1>
+                <p class="text-gray-600">Track and manage Cybersecurity Risk Assessment items</p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <button id="addCsraBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                    <i class="fas fa-plus mr-2"></i> Add CSRA Item
+                </button>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+                        <select id="statusFilter" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">All</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
+                        <select id="sortFilter" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="default">Default Order</option>
+                            <option value="startDate">Start Date</option>
+                            <option value="endDate">Due Date</option>
+                            <option value="title">Title</option>
+                        </select>
+                    </div>
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Filter Items</label>
+                        <div class="relative">
+                            <button id="multiSelectToggle" class="border border-gray-300 rounded-md px-3 py-2 text-left w-48 focus:outline-none focus:ring-2 focus:ring-blue-500 flex justify-between items-center">
+                                <span>Select Items</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div id="multiSelectDropdown" class="absolute z-10 mt-1 w-48 bg-white shadow-lg rounded-md py-1 hidden border border-gray-200 max-h-60 overflow-y-auto">
+                                <!-- Items will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="text-sm text-gray-700">Overall Progress:</div>
+                    <div class="relative w-8 h-8">
+                        <svg class="w-full h-full" viewBox="0 0 36 36">
+                            <path class="text-gray-200" stroke-width="3" fill="none" d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path id="overallProgressCircle" class="text-blue-600" stroke-width="3" stroke-dasharray="0, 100" fill="none" d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        </svg>
+                        <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-xs font-bold" id="overallProgressText">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Total Items</p>
+                        <h3 id="totalItems" class="text-2xl font-bold text-gray-800">0</h3>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-list text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">In Progress</p>
+                        <h3 id="inProgressItems" class="text-2xl font-bold text-gray-800">0</h3>
+                    </div>
+                    <div class="bg-yellow-100 p-3 rounded-full">
+                        <i class="fas fa-spinner text-yellow-600"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Completed</p>
+                        <h3 id="completedItems" class="text-2xl font-bold text-gray-800">0</h3>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-check-circle text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CSRA Items Container -->
+        <div id="csraItemsContainer" class="space-y-4">
+            <!-- Items will be dynamically inserted here -->
+        </div>
+    </div>
+    
+    <!-- Add CSRA Modal -->
+    <div id="addCsraModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Add New CSRA Item</h3>
+                    <button id="closeCsraModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="addCsraForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <input type="text" id="csraTitle" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="csraDescription" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                            <input type="date" id="csraStartDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                            <input type="date" id="csraEndDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Initial Status</label>
+                        <select id="csraStatus" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="In Progress">In Progress</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Initial Log Entry (Optional)</label>
+                        <textarea id="csraInitialLog" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="cancelCsraModal" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Add CSRA Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Log Modal -->
+    <div id="addLogModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Add New Log</h3>
+                    <button id="closeLogModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="addLogForm" class="space-y-4">
+                    <input type="hidden" id="logCsraId">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="logDescription" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" required></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select id="logStatus" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Open">Open</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Action By</label>
+                            <input type="text" id="logActionBy" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                            <input type="date" id="logDueDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Log Date</label>
+                            <input type="date" id="logDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea id="logNotes" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="cancelLogModal" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Add Log Entry</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Log Modal -->
+    <div id="editLogModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Edit Log Entry</h3>
+                    <button id="closeEditLogModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="editLogForm" class="space-y-4">
+                    <input type="hidden" id="editLogId">
+                    <input type="hidden" id="editLogCsraId">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="editLogDescription" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" required></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <select id="editLogStatus" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Open">Open</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Action By</label>
+                            <input type="text" id="editLogActionBy" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                            <input type="date" id="editLogDueDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Log Date</label>
+                            <input type="date" id="editLogDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea id="editLogNotes" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="cancelEditLogModal" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Update Log Entry</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="editCsraModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Edit CSRA Item</h3>
+                    <button id="closeEditCsraModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="editCsraForm" class="space-y-4">
+                    <input type="hidden" id="editCsraId">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <input type="text" id="editCsraTitle" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="editCsraDescription" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="2">${item.description || ''}</textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                            <input type="date" id="editCsraStartDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                            <input type="date" id="editCsraEndDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="editCsraStatus" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="Not Started">Not Started</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Progress (%)</label>
+                        <input type="number" id="editCsraProgress" min="0" max="100" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="cancelEditCsraModal" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600">Update Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Sheets data
+        let csraItems = [];
+        
+        // Fetch data from Google Sheets
+        function fetchCSRAData() {
+            fetch("https://script.google.com/macros/s/AKfycbz7WA3H1QPi0t26iu5p7YiQ3H32ytdGqvk836QHWjc7OmTz9XCxc-27ptsi3O1uYkNg/exec")
+                .then(res => res.json())
+                .then(data => {
+                    csraItems = data.csra;
+                    csraLogs = data.logs;
+                    renderCSRAItems();
+                    updateStats();
+                    updateOverallProgress();
+                    populateMultiSelect();
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    // Fallback to empty array if fetch fails
+                    csraItems = [];
+                });
+        }
+
+        // DOM Elements
+        const csraItemsContainer = document.getElementById('csraItemsContainer');
+        const statusFilter = document.getElementById('statusFilter');
+        const sortFilter = document.getElementById('sortFilter');
+        const totalItems = document.getElementById('totalItems');
+        const inProgressItems = document.getElementById('inProgressItems');
+        const completedItems = document.getElementById('completedItems');
+        
+        // Modal Elements
+        const addCsraModal = document.getElementById('addCsraModal');
+        const addCsraBtn = document.getElementById('addCsraBtn');
+        const closeCsraModal = document.getElementById('closeCsraModal');
+        const cancelCsraModal = document.getElementById('cancelCsraModal');
+        const addCsraForm = document.getElementById('addCsraForm');
+        
+        const addLogModal = document.getElementById('addLogModal');
+        const closeLogModal = document.getElementById('closeLogModal');
+        const cancelLogModal = document.getElementById('cancelLogModal');
+        const addLogForm = document.getElementById('addLogForm');
+        
+        const editLogModal = document.getElementById('editLogModal');
+        const closeEditLogModal = document.getElementById('closeEditLogModal');
+        const cancelEditLogModal = document.getElementById('cancelEditLogModal');
+        const editLogForm = document.getElementById('editLogForm');
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCSRAData();
+            
+            // Set today's date as default for new logs
+            document.getElementById('logDate').valueAsDate = new Date();
+            document.getElementById('editLogDate').valueAsDate = new Date();
+        });
+
+        // Update overall progress calculation
+        function updateOverallProgress() {
+            if (csraItems.length === 0) {
+                document.getElementById('overallProgressText').textContent = '0%';
+                document.getElementById('overallProgressCircle').setAttribute('stroke-dasharray', '0, 100');
+                return;
+            }
+            
+            const totalProgress = csraItems.reduce((sum, item) => sum + (item.progress || 0), 0);
+            const avgProgress = Math.round(totalProgress / csraItems.length);
+            
+            document.getElementById('overallProgressText').textContent = `${avgProgress}%`;
+            document.getElementById('overallProgressCircle').setAttribute('stroke-dasharray', `${avgProgress}, 100`);
+        }
+
+        // Populate multi-select dropdown
+        function populateMultiSelect() {
+            const dropdown = document.getElementById('multiSelectDropdown');
+            dropdown.innerHTML = '';
+            
+            csraItems.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center';
+                itemElement.innerHTML = `
+                    <input type="checkbox" id="item-${item.id}" class="mr-2" value="${item.id}">
+                    <label for="item-${item.id}" class="cursor-pointer">${item.title}</label>
+                `;
+                dropdown.appendChild(itemElement);
+            });
+        }
+
+        // Toggle multi-select dropdown
+        document.getElementById('multiSelectToggle').addEventListener('click', () => {
+            document.getElementById('multiSelectDropdown').classList.toggle('hidden');
+        });
+
+        // Render CSRA items based on filters
+        function renderCSRAItems() {
+            csraItemsContainer.innerHTML = '';
+            
+            // Filter by status
+            let filteredItems = [...csraItems];
+            if (statusFilter.value !== 'all') {
+                filteredItems = filteredItems.filter(item => item.status === statusFilter.value);
+            }
+            
+            // Sort items
+            if (sortFilter.value === 'startDate') {
+                filteredItems.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+            } else if (sortFilter.value === 'endDate') {
+                filteredItems.sort((a, b) => new Date(a.endDate) - new Date(b.endDate));
+            } else if (sortFilter.value === 'title') {
+                filteredItems.sort((a, b) => a.title.localeCompare(b.title));
+            }
+            
+            // Render each item
+            filteredItems.forEach(item => {
+                const itemElement = createCSRAItemElement(item);
+                csraItemsContainer.appendChild(itemElement);
+            });
+        }
+
+        // Create HTML element for a CSRA item
+        function createCSRAItemElement(item) {
+            const today = new Date();
+            const startDate = new Date(item.startDate);
+            const endDate = new Date(item.endDate);
+            
+            // Calculate progress percentage
+            const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+            const daysPassed = (today - startDate) / (1000 * 60 * 60 * 24);
+            let progressPercent = Math.min(100, Math.max(0, (daysPassed / totalDays) * 100));
+            
+            // Determine progress bar color
+            let progressColor = 'bg-green-500';
+            if (progressPercent > 80 || today > endDate) {
+                progressColor = 'bg-red-500';
+            } else if (progressPercent > 60) {
+                progressColor = 'bg-yellow-500';
+            }
+            
+            // Format dates
+            const formattedStartDate = startDate.toLocaleDateString();
+            const formattedEndDate = endDate.toLocaleDateString();
+            
+            // Get latest log summary if exists
+            let latestLogSummary = '';
+            if (item.logs.length > 0) {
+                const latestLog = item.logs[item.logs.length - 1];
+                let statusClass = '';
+                if (latestLog.status === 'Closed') {
+                    statusClass = 'bg-green-100 text-green-800';
+                } else if (latestLog.status === 'In Progress') {
+                    statusClass = 'bg-yellow-100 text-yellow-800';
+                } else {
+                    statusClass = 'bg-gray-100 text-gray-800';
+                }
+                latestLogSummary = `<div class="text-sm text-gray-600 mt-2">
+                    <span class="font-medium">Latest (${latestLog.status}):</span> ${latestLog.description.substring(0, 60)}${latestLog.description.length > 60 ? '...' : ''}
+                </div>`;
+            }
+            
+            // Create the item element
+            const itemElement = document.createElement('div');
+            itemElement.className = 'bg-white rounded-lg shadow overflow-hidden fade-in';
+            itemElement.dataset.id = item.id;
+            itemElement.dataset.status = item.status;
+            
+            itemElement.innerHTML = `
+                <div class="p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center">
+                                <h3 class="text-lg font-semibold text-gray-800 mr-2">${item.title}</h3>
+                                ${item.description ? `<button class="info-btn text-gray-400 hover:text-gray-600" data-description="${item.description.replace(/"/g, '&quot;')}">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>` : ''}
+                            </div>
+                            ${item.description ? `<p class="text-sm text-gray-600 mt-1">${item.description}</p>` : ''}
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm font-medium text-gray-700">${item.progress || 0}%</span>
+                            <span class="px-2 py-1 text-xs rounded-full ${item.status === 'Closed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${item.status}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600 mt-2">
+                        <span><i class="far fa-calendar-alt mr-1"></i> ${formattedStartDate}</span>
+                        <span class="mx-2">→</span>
+                        <span><i class="far fa-calendar-check mr-1"></i> ${formattedEndDate}</span>
+                    </div>
+                    ${latestLogSummary}
+                    <div class="mt-3">
+                        <div class="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>${formattedStartDate}</span>
+                            <span>${formattedEndDate}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-5 relative">
+                            <div class="progress-bar ${progressColor} h-5 rounded-full" style="width: ${progressPercent}%"></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
+                                ${Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)))} days left
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-2 mt-4">
+                        <button class="edit-csra-btn px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 flex items-center" data-id="${item.id}">
+                            <i class="fas fa-edit mr-1"></i> Edit Item
+                        </button>
+                        <button class="add-log-btn px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center" data-id="${item.id}">
+                            <i class="fas fa-plus mr-1"></i> Add Log
+                        </button>
+                        <button class="view-logs-btn px-3 py-1 border border-gray-300 text-gray-700 text-sm rounded hover:bg-gray-50 flex items-center" data-id="${item.id}">
+                            <i class="fas fa-list mr-1"></i> View Logs
+                        </button>
+                    </div>
+                </div>
+                <div class="logs-container hidden border-t border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Log #</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Log Date</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action By</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200 logs-table-body">
+                                <!-- Logs will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            // Add logs to the table
+            const logsTableBody = itemElement.querySelector('.logs-table-body');
+            item.logs.forEach(log => {
+                const logRow = createLogRowElement(item.id, log);
+                logsTableBody.appendChild(logRow);
+            });
+            
+            return itemElement;
+        }
+
+        // Create HTML element for a log row
+        function createLogRowElement(csraId, log) {
+            const logDate = new Date(log.logDate);
+            const formattedLogDate = logDate.toLocaleDateString();
+            
+            let dueDateText = '-';
+            if (log.dueDate) {
+                const dueDate = new Date(log.dueDate);
+                formattedDueDate = dueDate.toLocaleDateString();
+                dueDateText = formattedDueDate;
+            }
+            
+            let statusClass = '';
+            if (log.status === 'Closed') {
+                statusClass = 'bg-green-100 text-green-800';
+            } else if (log.status === 'In Progress') {
+                statusClass = 'bg-yellow-100 text-yellow-800';
+            } else {
+                statusClass = 'bg-gray-100 text-gray-800';
+            }
+            
+            const logRow = document.createElement('tr');
+            logRow.className = 'log-row highlight-new';
+            logRow.dataset.logId = log.logNumber;
+            logRow.dataset.csraId = csraId;
+            
+            logRow.innerHTML = `
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${log.logNumber}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${formattedLogDate}</td>
+                <td class="px-4 py-3 text-sm text-gray-500">${log.description}</td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs rounded-full ${statusClass}">${log.status}</span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${log.actionBy}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${dueDateText}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                    <button class="edit-log-btn text-blue-600 hover:text-blue-900 mr-2" data-csra-id="${csraId}" data-log-id="${log.logNumber}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-log-btn text-red-600 hover:text-red-900" data-csra-id="${csraId}" data-log-id="${log.logNumber}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            return logRow;
+        }
+
+        // Update statistics
+        function updateStats() {
+            totalItems.textContent = csraItems.length;
+            const inProgressCount = csraItems.filter(item => item.status === 'In Progress').length;
+            const completedCount = csraItems.filter(item => item.status === 'Closed').length;
+            
+            inProgressItems.textContent = inProgressCount;
+            completedItems.textContent = completedCount;
+        }
+
+        // Event Listeners
+        statusFilter.addEventListener('change', renderCSRAItems);
+        sortFilter.addEventListener('change', renderCSRAItems);
+        
+        // Toggle logs visibility
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('view-logs-btn') || e.target.closest('.view-logs-btn')) {
+                const button = e.target.classList.contains('view-logs-btn') ? e.target : e.target.closest('.view-logs-btn');
+                const csraId = parseInt(button.dataset.id);
+                const itemElement = button.closest('.bg-white');
+                const logsContainer = itemElement.querySelector('.logs-container');
+                const icon = button.querySelector('i');
+                
+                logsContainer.classList.toggle('hidden');
+                icon.classList.toggle('rotate-90');
+                icon.classList.toggle('rotate-0');
+                
+                // Change button text based on state
+                if (logsContainer.classList.contains('hidden')) {
+                    button.innerHTML = '<i class="fas fa-list mr-1"></i> View Logs';
+                } else {
+                    button.innerHTML = '<i class="fas fa-list mr-1"></i> Hide Logs';
+                }
+            }
+            
+            // Add log button
+            if (e.target.classList.contains('add-log-btn') || e.target.closest('.add-log-btn')) {
+                const button = e.target.classList.contains('add-log-btn') ? e.target : e.target.closest('.add-log-btn');
+                const csraId = parseInt(button.dataset.id);
+                
+                document.getElementById('logCsraId').value = csraId;
+                addLogModal.classList.remove('hidden');
+            }
+            
+            // Edit log button
+            if (e.target.classList.contains('edit-log-btn') || e.target.closest('.edit-log-btn')) {
+                const button = e.target.classList.contains('edit-log-btn') ? e.target : e.target.closest('.edit-log-btn');
+                const csraId = parseInt(button.dataset.csraId);
+                const logId = parseInt(button.dataset.logId);
+                
+                const csraItem = csraItems.find(item => item.id === csraId);
+                if (csraItem) {
+                    const log = csraItem.logs.find(l => l.logNumber === logId);
+                    if (log) {
+                        document.getElementById('editLogId').value = logId;
+                        document.getElementById('editLogCsraId').value = csraId;
+                        document.getElementById('editLogDescription').value = log.description;
+                        document.getElementById('editLogStatus').value = log.status;
+                        document.getElementById('editLogActionBy').value = log.actionBy;
+                        document.getElementById('editLogDueDate').value = log.dueDate || '';
+                        document.getElementById('editLogDate').value = log.logDate;
+                        document.getElementById('editLogNotes').value = log.notes || '';
+                        
+                        editLogModal.classList.remove('hidden');
+                    }
+                }
+            }
+            
+            // Delete log button
+            if (e.target.classList.contains('delete-log-btn') || e.target.closest('.delete-log-btn')) {
+                const button = e.target.classList.contains('delete-log-btn') ? e.target : e.target.closest('.delete-log-btn');
+                const csraId = parseInt(button.dataset.csraId);
+                const logId = parseInt(button.dataset.logId);
+                
+                if (confirm('Are you sure you want to delete this log entry?')) {
+                    const csraItem = csraItems.find(item => item.id === csraId);
+                    if (csraItem) {
+                        csraItem.logs = csraItem.logs.filter(l => l.logNumber !== logId);
+                        
+                        // If no logs left, set status to "In Progress" if it was "Closed"
+                        if (csraItem.logs.length === 0 && csraItem.status === 'Closed') {
+                            csraItem.status = 'In Progress';
+                        }
+                        
+                        renderCSRAItems();
+                        updateStats();
+                    }
+                }
+            }
+        });
+        
+        // Add CSRA Modal
+        addCsraBtn.addEventListener('click', () => {
+            addCsraModal.classList.remove('hidden');
+        });
+        
+        closeCsraModal.addEventListener('click', () => {
+            addCsraModal.classList.add('hidden');
+        });
+        
+        cancelCsraModal.addEventListener('click', () => {
+            addCsraModal.classList.add('hidden');
+        });
+        
+        addCsraForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('csraTitle').value;
+            const startDate = document.getElementById('csraStartDate').value;
+            const endDate = document.getElementById('csraEndDate').value;
+            const status = document.getElementById('csraStatus').value;
+            const initialLog = document.getElementById('csraInitialLog').value;
+            
+            // Create new CSRA item
+            const newId = csraItems.length > 0 ? Math.max(...csraItems.map(item => item.id)) + 1 : 1;
+            const newItem = {
+                id: newId,
+                title: title,
+                startDate: startDate,
+                endDate: endDate,
+                status: status,
+                logs: []
+            };
+            
+            // Add initial log if provided
+            if (initialLog.trim() !== '') {
+                newItem.logs.push({
+                    logNumber: 1,
+                    logDate: startDate,
+                    description: initialLog,
+                    status: 'Open',
+                    actionBy: 'System',
+                    dueDate: endDate,
+                    notes: 'Initial log entry'
+                });
+            }
+            
+            fetch("https://script.google.com/macros/s/AKfycbz7WA3H1QPi0t26iu5p7YiQ3H32ytdGqvk836QHWjc7OmTz9XCxc-27ptsi3O1uYkNg/exec", {
+                method: "POST",
+                body: JSON.stringify({
+                    action: 'add-csra',
+                    data: newItem
+                }),
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(() => {
+                addCsraModal.classList.add('hidden');
+                addCsraForm.reset();
+                fetchCSRAData(); // Refresh data
+            })
+            .catch(error => {
+                console.error('Error adding CSRA item:', error);
+                alert('Failed to add CSRA item. Please try again.');
+            });
+        });
+        
+        // Add Log Modal
+        closeLogModal.addEventListener('click', () => {
+            addLogModal.classList.add('hidden');
+        });
+        
+        cancelLogModal.addEventListener('click', () => {
+            addLogModal.classList.add('hidden');
+        });
+        
+        addLogForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const csraId = parseInt(document.getElementById('logCsraId').value);
+            const description = document.getElementById('logDescription').value;
+            const status = document.getElementById('logStatus').value;
+            const actionBy = document.getElementById('logActionBy').value;
+            const dueDate = document.getElementById('logDueDate').value;
+            const logDate = document.getElementById('logDate').value;
+            const notes = document.getElementById('logNotes').value;
+            
+            const csraItem = csraItems.find(item => item.id === csraId);
+            if (csraItem) {
+                // Determine next log number
+                const logNumber = csraItem.logs.length > 0 ? 
+                    Math.max(...csraItem.logs.map(l => l.logNumber)) + 1 : 1;
+                
+                // Add new log
+                const newLog = {
+                    logNumber: logNumber,
+                    logDate: logDate,
+                    description: description,
+                    status: status,
+                    actionBy: actionBy,
+                    dueDate: dueDate || null,
+                    notes: notes || '',
+                    csraId: csraId
+                };
+                
+                fetch("https://script.google.com/macros/s/AKfycbz7WA3H1QPi0t26iu5p7YiQ3H32ytdGqvk836QHWjc7OmTz9XCxc-27ptsi3O1uYkNg/exec", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: 'add-log',
+                        data: newLog
+                    }),
+                    headers: { "Content-Type": "application/json" }
+                })
+                .then(() => {
+                    addLogModal.classList.add('hidden');
+                    addLogForm.reset();
+                    fetchCSRAData(); // Refresh data
+                })
+                .catch(error => {
+                    console.error('Error adding log:', error);
+                    alert('Failed to add log. Please try again.');
+                });
+            }
+        });
+        
+        // Edit Log Modal
+        closeEditLogModal.addEventListener('click', () => {
+            editLogModal.classList.add('hidden');
+        });
+        
+        cancelEditLogModal.addEventListener('click', () => {
+            editLogModal.classList.add('hidden');
+        });
+        
+        // Edit CSRA Item Modal
+        const editCsraModal = document.getElementById('editCsraModal');
+        const editCsraForm = document.getElementById('editCsraForm');
+        const closeEditCsraModal = document.getElementById('closeEditCsraModal');
+        const cancelEditCsraModal = document.getElementById('cancelEditCsraModal');
+
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-csra-btn') || e.target.closest('.edit-csra-btn')) {
+                const button = e.target.classList.contains('edit-csra-btn') ? e.target : e.target.closest('.edit-csra-btn');
+                const csraId = parseInt(button.dataset.id);
+                const csraItem = csraItems.find(item => item.id === csraId);
+                if (csraItem) {
+                    document.getElementById('editCsraId').value = csraId;
+                    document.getElementById('editCsraTitle').value = csraItem.title;
+                    document.getElementById('editCsraStartDate').value = csraItem.startDate;
+                    document.getElementById('editCsraEndDate').value = csraItem.endDate;
+                    document.getElementById('editCsraStatus').value = csraItem.status;
+                    document.getElementById('editCsraProgress').value = csraItem.progress || 0;
+                    editCsraModal.classList.remove('hidden');
+                }
+            }
+        });
+
+        closeEditCsraModal.addEventListener('click', () => {
+            editCsraModal.classList.add('hidden');
+        });
+        cancelEditCsraModal.addEventListener('click', () => {
+            editCsraModal.classList.add('hidden');
+        });
+
+        editCsraForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const csraId = parseInt(document.getElementById('editCsraId').value);
+            const csraItem = csraItems.find(item => item.id === csraId);
+            if (csraItem) {
+                csraItem.title = document.getElementById('editCsraTitle').value;
+                csraItem.startDate = document.getElementById('editCsraStartDate').value;
+                csraItem.endDate = document.getElementById('editCsraEndDate').value;
+                csraItem.status = document.getElementById('editCsraStatus').value;
+                csraItem.progress = parseInt(document.getElementById('editCsraProgress').value, 10) || 0;
+                fetch("https://script.google.com/macros/s/AKfycbz7WA3H1QPi0t26iu5p7YiQ3H32ytdGqvk836QHWjc7OmTz9XCxc-27ptsi3O1uYkNg/exec", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: 'update-csra',
+                        data: {
+                            id: csraId,
+                            updates: {
+                                title: document.getElementById('editCsraTitle').value,
+                                startDate: document.getElementById('editCsraStartDate').value,
+                                endDate: document.getElementById('editCsraEndDate').value,
+                                status: document.getElementById('editCsraStatus').value,
+                                progress: parseInt(document.getElementById('editCsraProgress').value, 10) || 0
+                            }
+                        }
+                    }),
+                    headers: { "Content-Type": "application/json" }
+                })
+                .then(() => {
+                    editCsraModal.classList.add('hidden');
+                    fetchCSRAData(); // Refresh data
+                })
+                .catch(error => {
+                    console.error('Error updating CSRA item:', error);
+                    alert('Failed to update CSRA item. Please try again.');
+                });
+            }
+        });
+
+        editLogForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const csraId = parseInt(document.getElementById('editLogCsraId').value);
+            const logId = parseInt(document.getElementById('editLogId').value);
+            const description = document.getElementById('editLogDescription').value;
+            const status = document.getElementById('editLogStatus').value;
+            const actionBy = document.getElementById('editLogActionBy').value;
+            const dueDate = document.getElementById('editLogDueDate').value;
+            const logDate = document.getElementById('editLogDate').value;
+            const notes = document.getElementById('editLogNotes').value;
+            
+            const csraItem = csraItems.find(item => item.id === csraId);
+            if (csraItem) {
+                const log = csraItem.logs.find(l => l.logNumber === logId);
+                if (log) {
+                    // Update log
+                    log.description = description;
+                    log.status = status;
+                    log.actionBy = actionBy;
+                    log.dueDate = dueDate || null;
+                    log.logDate = logDate;
+                    log.notes = notes || '';
+                    
+                    // Update CSRA status if needed
+                    if (csraItem.status === 'Closed') {
+                        // If any log is not closed, set status to "In Progress"
+                        const allClosed = csraItem.logs.every(l => l.status === 'Closed');
+                        if (!allClosed) {
+                            csraItem.status = 'In Progress';
+                        }
+                    } else {
+                        // If all logs are closed, set status to "Closed"
+                        const allClosed = csraItem.logs.every(l => l.status === 'Closed');
+                        if (allClosed) {
+                            csraItem.status = 'Closed';
+                        }
+                    }
+                    
+                    fetch("https://script.google.com/macros/s/AKfycbz7WA3H1QPi0t26iu5p7YiQ3H32ytdGqvk836QHWjc7OmTz9XCxc-27ptsi3O1uYkNg/exec", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            action: 'update-log',
+                            data: {
+                                csraId: csraId,
+                                logId: logId,
+                                updates: {
+                                    description: description,
+                                    status: status,
+                                    actionBy: actionBy,
+                                    dueDate: dueDate || null,
+                                    logDate: logDate,
+                                    notes: notes || ''
+                                }
+                            }
+                        }),
+                        headers: { "Content-Type": "application/json" }
+                    })
+                    .then(() => {
+                        editLogModal.classList.add('hidden');
+                        fetchCSRAData(); // Refresh data
+                    })
+                    .catch(error => {
+                        console.error('Error updating log:', error);
+                        alert('Failed to update log. Please try again.');
+                    });
+                }
+            }
+        });
+    </script>
+    
+    <!-- Description Tooltip -->
+    <div id="descriptionTooltip" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Item Description</h3>
+                <button id="closeTooltip" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p id="tooltipContent" class="text-gray-700"></p>
+        </div>
+    </div>
+
+    <script>
+        // Tooltip functionality
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('info-btn') || e.target.closest('.info-btn')) {
+                const button = e.target.classList.contains('info-btn') ? e.target : e.target.closest('.info-btn');
+                const description = button.dataset.description;
+                document.getElementById('tooltipContent').textContent = description;
+                document.getElementById('descriptionTooltip').classList.remove('hidden');
+            }
+            
+            if (e.target.id === 'closeTooltip' || e.target.closest('#closeTooltip')) {
+                document.getElementById('descriptionTooltip').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
