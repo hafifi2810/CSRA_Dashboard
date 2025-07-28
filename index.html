@@ -366,7 +366,8 @@
             fetch("https://script.google.com/macros/s/AKfycbz7WA3H1QPi0t26iu5p7YiQ3H32ytdGqvk836QHWjc7OmTz9XCxc-27ptsi3O1uYkNg/exec")
                 .then(res => res.json())
                 .then(data => {
-                    csraItems = data.csra || [];
+                    console.log("Fetched CSRA data:", data); // ✅ Always log to debug
+                    csraItems = data || [];
                     csraLogs = data.logs || [];
                     renderCSRAItems();
                     updateStats();
