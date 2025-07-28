@@ -389,8 +389,10 @@
         // Create HTML element for a CSRA item
         function createCSRAItemElement(item) {
             const today = new Date();
-            const startDate = new Date(item.startDate);
-            const endDate = new Date(item.endDate);
+            const startDate = new Date(item["Start Date"]);
+            const endDate = new Date(item["Due Date"]);
+            const formattedStartDate = startDate.toLocaleDateString('en-GB');
+            const formattedEndDate = endDate.toLocaleDateString('en-GB');
             
             // Calculate progress percentage
             const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
