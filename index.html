@@ -361,52 +361,6 @@
         // Google Sheets data
         let csraItems = [];
 
-
-        function renderCSRAItems() {
-            const csraItemsContainer = document.getElementById('csraItemsContainer');
-            csraItemsContainer.innerHTML = '';
-
-            // ✅ Filter logic (if needed)
-            let filteredItems = [...csraItems];
-            if (typeof statusFilter !== 'undefined' && statusFilter.value !== 'all') {
-                filteredItems = filteredItems.filter(item => item.Status === statusFilter.value);
-            }
-
-            // ✅ Sort logic
-            if (typeof sortOrder !== 'undefined' && sortOrder.value === 'asc') {
-                filteredItems.sort((a, b) => (a.Title || '').localeCompare(b.Title || ''));
-            } else {
-                filteredItems.sort((a, b) => (b.Title || '').localeCompare(a.Title || ''));
-            }
-
-            // ✅ Render items if they have a Title
-            filteredItems
-                .filter(item => item && item.Title)
-                .forEach(item => {
-                    createCSRAItemElement(item); // ← this should already exist
-                });
-        }
-
-        // Fetch data from Google Sheets
-        function fetchCSRAData() {
-            fetch("https://script.google.com/macros/s/AKfycbz7WA3H1QPi0t26iu5p7YiQ3H32ytdGqvk836QHWjc7OmTz9XCxc-27ptsi3O1uYkNg/exec")
-                .then(res => res.json())
-                .then(data => {
-                    console.log("Fetched CSRA data:", data); // ✅ Always log to debug
-                    csraItems = data || [];
-                    csraLogs = data.logs || [];
-                    renderCSRAItems();
-                    updateStats();
-                    updateOverallProgress();
-                    populateMultiSelect();
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                    // Fallback to empty array if fetch fails
-                    csraItems = [];
-                });
-        }
-
         // DOM Elements
         const csraItemsContainer = document.getElementById('csraItemsContainer');
         const statusFilter = document.getElementById('statusFilter');
@@ -431,51 +385,6 @@
         const closeEditLogModal = document.getElementById('closeEditLogModal');
         const cancelEditLogModal = document.getElementById('cancelEditLogModal');
         const editLogForm = document.getElementById('editLogForm');
-
-        // Initialize the dashboard
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchCSRAData();
-            
-            // Set today's date as default for new logs
-            document.getElementById('logDate').valueAsDate = new Date();
-            document.getElementById('editLogDate').valueAsDate = new Date();
-        });
-
-        // Update overall progress calculation
-        function updateOverallProgress() {
-            if (csraItems.length === 0) {
-                document.getElementById('overallProgressText').textContent = '0%';
-                document.getElementById('overallProgressCircle').setAttribute('stroke-dasharray', '0, 100');
-                return;
-            }
-            
-            const totalProgress = csraItems.reduce((sum, item) => sum + (item.progress || 0), 0);
-            const avgProgress = Math.round(totalProgress / csraItems.length);
-            
-            document.getElementById('overallProgressText').textContent = `${avgProgress}%`;
-            document.getElementById('overallProgressCircle').setAttribute('stroke-dasharray', `${avgProgress}, 100`);
-        }
-
-        // Populate multi-select dropdown
-        function populateMultiSelect() {
-            const dropdown = document.getElementById('multiSelectDropdown');
-            dropdown.innerHTML = '';
-            
-            csraItems.forEach(item => {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center';
-                itemElement.innerHTML = `
-                    <input type="checkbox" id="item-${item.id}" class="mr-2" value="${item.id}">
-                    <label for="item-${item.id}" class="cursor-pointer">${item.title}</label>
-                `;
-                dropdown.appendChild(itemElement);
-            });
-        }
-
-        // Toggle multi-select dropdown
-        document.getElementById('multiSelectToggle').addEventListener('click', () => {
-            document.getElementById('multiSelectDropdown').classList.toggle('hidden');
-        });
 
         // Create HTML element for a CSRA item
         function createCSRAItemElement(item) {
@@ -507,14 +416,14 @@
                 let statusClass = '';
                 if (latestLog.status === 'Closed') {
                     statusClass = 'bg-green-100 text-green-800';
-            } else if (latestLog.status === 'In Progress') {
-                statusClass = 'bg-yellow-100 text-yellow-800';
-            } else {
-                statusClass = 'bg-gray-100 text-gray-800';
-            }
-            latestLogSummary = `<div class="text-sm text-gray-600 mt-2">
-                <span class="font-medium">Latest (${latestLog.status}):</span> ${latestLog.description.substring(0, 60)}${latestLog.description.length > 60 ? '...' : ''}
-            </div>`;
+                } else if (latestLog.status === 'In Progress') {
+                    statusClass = 'bg-yellow-100 text-yellow-800';
+                } else {
+                    statusClass = 'bg-gray-100 text-gray-800';
+                }
+                latestLogSummary = `<div class="text-sm text-gray-600 mt-2">
+                    <span class="font-medium">Latest (${latestLog.status}):</span> ${latestLog.description.substring(0, 60)}${latestLog.description.length > 60 ? '...' : ''}
+                </div>`;
             }
             
             // Create the item element
@@ -612,7 +521,7 @@
             let dueDateText = '-';
             if (log.dueDate) {
                 const dueDate = new Date(log.dueDate);
-                formattedDueDate = dueDate.toLocaleDateString();
+                const formattedDueDate = dueDate.toLocaleDateString();
                 dueDateText = formattedDueDate;
             }
             
@@ -652,6 +561,31 @@
             return logRow;
         }
 
+        function renderCSRAItems() {
+            const csraItemsContainer = document.getElementById('csraItemsContainer');
+            csraItemsContainer.innerHTML = '';
+
+            // ✅ Filter logic (if needed)
+            let filteredItems = [...csraItems];
+            if (typeof statusFilter !== 'undefined' && statusFilter.value !== 'all') {
+                filteredItems = filteredItems.filter(item => item.Status === statusFilter.value);
+            }
+
+            // ✅ Sort logic
+            if (typeof sortOrder !== 'undefined' && sortOrder.value === 'asc') {
+                filteredItems.sort((a, b) => (a.Title || '').localeCompare(b.Title || ''));
+            } else {
+                filteredItems.sort((a, b) => (b.Title || '').localeCompare(a.Title || ''));
+            }
+
+            // ✅ Render items if they have a Title
+            filteredItems
+                .filter(item => item && item.Title)
+                .forEach(item => {
+                    createCSRAItemElement(item); // ← this should already exist
+                });
+        }
+
         // Update statistics
         function updateStats() {
             totalItems.textContent = csraItems.length;
@@ -662,9 +596,74 @@
             completedItems.textContent = completedCount;
         }
 
+        // Update overall progress calculation
+        function updateOverallProgress() {
+            if (csraItems.length === 0) {
+                document.getElementById('overallProgressText').textContent = '0%';
+                document.getElementById('overallProgressCircle').setAttribute('stroke-dasharray', '0, 100');
+                return;
+            }
+            
+            const totalProgress = csraItems.reduce((sum, item) => sum + (item.progress || 0), 0);
+            const avgProgress = Math.round(totalProgress / csraItems.length);
+            
+            document.getElementById('overallProgressText').textContent = `${avgProgress}%`;
+            document.getElementById('overallProgressCircle').setAttribute('stroke-dasharray', `${avgProgress}, 100`);
+        }
+
+        // Populate multi-select dropdown
+        function populateMultiSelect() {
+            const dropdown = document.getElementById('multiSelectDropdown');
+            dropdown.innerHTML = '';
+            
+            csraItems.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center';
+                itemElement.innerHTML = `
+                    <input type="checkbox" id="item-${item.id}" class="mr-2" value="${item.id}">
+                    <label for="item-${item.id}" class="cursor-pointer">${item.title}</label>
+                `;
+                dropdown.appendChild(itemElement);
+            });
+        }
+
+        // Fetch data from Google Sheets
+        function fetchCSRAData() {
+            fetch("https://script.google.com/macros/s/AKfycbz7WA3H1QPi0t26iu5p7YiQ3H32ytdGqvk836QHWjc7OmTz9XCxc-27ptsi3O1uYkNg/exec")
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Fetched CSRA data:", data); // ✅ Always log to debug
+                    csraItems = data || [];
+                    csraLogs = data.logs || [];
+                    renderCSRAItems();
+                    updateStats();
+                    updateOverallProgress();
+                    populateMultiSelect();
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    // Fallback to empty array if fetch fails
+                    csraItems = [];
+                });
+        }
+
+        // Toggle multi-select dropdown
+        document.getElementById('multiSelectToggle').addEventListener('click', () => {
+            document.getElementById('multiSelectDropdown').classList.toggle('hidden');
+        });
+
         // Event Listeners
         statusFilter.addEventListener('change', renderCSRAItems);
         sortFilter.addEventListener('change', renderCSRAItems);
+        
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchCSRAData();
+            
+            // Set today's date as default for new logs
+            document.getElementById('logDate').valueAsDate = new Date();
+            document.getElementById('editLogDate').valueAsDate = new Date();
+        });
         
         // Toggle logs visibility
         document.addEventListener('click', (e) => {
