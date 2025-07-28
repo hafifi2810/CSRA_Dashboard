@@ -360,7 +360,33 @@
     <script>
         // Google Sheets data
         let csraItems = [];
-        
+
+
+        function renderCSRAItems() {
+            const csraItemsContainer = document.getElementById('csraItemsContainer');
+            csraItemsContainer.innerHTML = '';
+
+            // ✅ Filter logic (if needed)
+            let filteredItems = [...csraItems];
+            if (typeof statusFilter !== 'undefined' && statusFilter.value !== 'all') {
+                filteredItems = filteredItems.filter(item => item.Status === statusFilter.value);
+            }
+
+            // ✅ Sort logic
+            if (typeof sortOrder !== 'undefined' && sortOrder.value === 'asc') {
+                filteredItems.sort((a, b) => (a.Title || '').localeCompare(b.Title || ''));
+            } else {
+                filteredItems.sort((a, b) => (b.Title || '').localeCompare(a.Title || ''));
+            }
+
+            // ✅ Render items if they have a Title
+            filteredItems
+                .filter(item => item && item.Title)
+                .forEach(item => {
+                    createCSRAItemElement(item); // ← this should already exist
+                });
+        }
+
         // Fetch data from Google Sheets
         function fetchCSRAData() {
             fetch("https://script.google.com/macros/s/AKfycbz7WA3H1QPi0t26iu5p7YiQ3H32ytdGqvk836QHWjc7OmTz9XCxc-27ptsi3O1uYkNg/exec")
