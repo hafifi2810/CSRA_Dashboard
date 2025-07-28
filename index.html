@@ -616,17 +616,20 @@
         function populateMultiSelect() {
             const dropdown = document.getElementById('multiSelectDropdown');
             dropdown.innerHTML = '';
-            
-            csraItems.forEach(item => {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center';
-                itemElement.innerHTML = `
-                    <input type="checkbox" id="item-${item.id}" class="mr-2" value="${item.id}">
-                    <label for="item-${item.id}" class="cursor-pointer">${item.title}</label>
-                `;
-                dropdown.appendChild(itemElement);
-            });
-        }
+
+            csraItems.forEach((item, index) => {
+                const itemId = `item-${index}`;
+                const title = item.Title || 'Untitled';
+
+            const itemElement = document.createElement('div');
+            itemElement.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center';
+            itemElement.innerHTML = `
+                <input type="checkbox" id="${itemId}" class="mr-2" value="${title}">
+                <label for="${itemId}" class="cursor-pointer">${title}</label>
+            `;
+            dropdown.appendChild(itemElement);
+        });
+    }
 
         // Fetch data from Google Sheets
         function fetchCSRAData() {
