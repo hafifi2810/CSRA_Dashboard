@@ -450,31 +450,6 @@
             document.getElementById('multiSelectDropdown').classList.toggle('hidden');
         });
 
-        // Render CSRA items based on filters
-        function renderCSRAItems() {
-            csraItemsContainer.innerHTML = '';
-            
-            // Filter by status
-            let filteredItems = [...csraItems];
-            if (statusFilter.value !== 'all') {
-                filteredItems = filteredItems.filter(item => item.status === statusFilter.value);
-            }
-            
-            // ✅ Sort items (by title, can update to sort by date or other)
-            if (sortOrder.value === 'asc') {
-                filteredItems.sort((a, b) => (a.Title || '').localeCompare(b.Title || ''));
-            } else {
-                filteredItems.sort((a, b) => (b.Title || '').localeCompare(a.Title || ''));
-            }
-            
-            // ✅ Only render valid items with a Title
-            filteredItems
-                .filter(item => item && item.Title)
-                .forEach(item => {
-                    createCSRAItemElement(item); // <- Pass structured object
-                });
-        }
-
         // Create HTML element for a CSRA item
         function createCSRAItemElement(item) {
             const today = new Date();
